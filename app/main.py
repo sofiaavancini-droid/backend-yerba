@@ -1,11 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
+from sqlalchemy.orm import Session
+
+from app.database import engine, Base, get_db
+from app.models import ProductoModel
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Permite la conexión desde el frontend de React
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -14,9 +19,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Paso 1 — El modelo Producto con Pydantic
-class Producto(BaseModel):
-    id: int
+
+class ProductoCreate(BaseModel):
     nombre: str
     precio_final: float
     cuotas_cantidad: int
@@ -24,44 +28,21 @@ class Producto(BaseModel):
     garantia_meses: int
     stock: int
 
-# Paso 2 — Productos de prueba en memoria
-productos_db = [
-    {
-        "id": 1,
-        "nombre": "Yerba Mate Playadito 1kg",
-        "precio_final": 4200.0,
-        "cuotas_cantidad": 3,
-        "cuotas_valor": 1400.0,
-        "garantia_meses": 6,
-        "stock": 15
-    },
-    {
-        "id": 2,
-        "nombre": "Yerba Mate Canarias 1kg",
-        "precio_final": 5800.0,
-        "cuotas_cantidad": 6,
-        "cuotas_valor": 966.66,
-        "garantia_meses": 6,
-        "stock": 8
-    },
-    {
-        "id": 3,
-        "nombre": "Yerba Mate Rosamonte 500g",
-        "precio_final": 2500.0,
-        "cuotas_cantidad": 3,
-        "cuotas_valor": 833.33,
-        "garantia_meses": 3,
-        "stock": 20
-    }
-]
 
-# Paso 3 — Endpoint GET
-@app.get("/productos", response_model=List[Producto])
-def obtener_productos():
-    return productos_db
+class ProductoResponse(ProductoCreate):
+    id: int
 
-# Paso 4 — Endpoint POST
-@app.post("/productos", response_model=Producto)
-def crear_producto(producto: Producto):
-    productos_db.append(producto.model_dump())
-    return producto
+    class Config:
+        from_attributes = True
+
+@app.get("/productos", response_model=List[ProductoResponse])
+def obtener_productos(db: Session = Depends(get_db)):
+    return db.query(ProductoModel).all()
+
+@app.post("/productos", response_model=ProductoResponse, status_code=status.HTTP_201_CREATED)
+def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db)):
+    nuevo_producto = ProductoModel(**producto.model_dump())
+    db.add(nuevo_producto)
+    db.commit()
+    db.refresh(nuevo_producto)
+    return nuevo_producto
