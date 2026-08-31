@@ -7,10 +7,17 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Archivos de entorno (Variables secretas y locales)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencias y compilación
 node_modules
 dist
 dist-ssr
-*.local
 
 # Editor directories and files
 .vscode/*
@@ -20,5 +27,4 @@ dist-ssr
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?

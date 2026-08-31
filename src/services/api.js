@@ -1,22 +1,16 @@
-const API_URL = "http://127.0.0.1:8000"; 
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-// src/services/api.js
+export async function getProductos({ page = 0, limit = 5, nombre = "" } = {}) {
+  const params = new URLSearchParams({ page, limit });
+  if (nombre) params.set("nombre", nombre);
 
-export async function getProductos({ page = 0, limit = 6, nombre = "" } = {}) {
-  const params = new URLSearchParams({ 
-    skip: page * limit, 
-    limit 
-  });
+  const res = await fetch(`${BASE_URL}/productos/?${params}`);
+  if (!res.ok) throw new Error(`Error ${res.status}`);
+  return res.json();
+}
 
-  if (nombre) {
-    params.append("nombre", nombre);
-  }
-
-  const respuesta = await fetch(`${API_URL}/productos?${params}`);
-
-  if (!respuesta.ok) {
-    throw new Error("Error al consultar el backend");
-  }
-
-  return respuesta.json();
+export async function getProducto(id) {
+  const res = await fetch(`${BASE_URL}/productos/${id}`);
+  if (!res.ok) throw new Error("Producto no encontrado");
+  return res.json();
 }
