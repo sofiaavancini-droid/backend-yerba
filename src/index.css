@@ -1,1 +1,102 @@
 @import "tailwindcss";
+
+/* Reseteo y fondo general */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  background-color: #f7f5f0;
+  color: #1f2937;
+}
+
+/* Buscador */
+input[type="text"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 16px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  font-size: 14px;
+}
+
+/* Contenedor de la Grilla */
+.grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 20px !important;
+  margin: 24px 0 !important;
+}
+
+/* Tarjeta individual de Producto (ProductCard) */
+.grid > div {
+  background-color: #ffffff !important;
+  border: 1px solid #e5e7eb !important;
+  border-radius: 12px !important;
+  padding: 18px !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  text-align: left !important;
+}
+
+/* Títulos y Precios */
+.grid h2 {
+  margin: 0 0 8px 0 !important;
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.grid p {
+  margin: 4px 0 !important;
+  font-size: 14px !important;
+}
+
+/* Botones dentro de las tarjetas (Agregar al carrito) */
+.grid button {
+  width: 100% !important;
+  margin-top: 12px !important;
+  background-color: #059669 !important; /* Verde Esmeralda */
+  color: #ffffff !important;
+  border: none !important;
+  padding: 10px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s !important;
+}
+
+.grid button:hover {
+  background-color: #047857 !important;
+}
+
+/* Paginación */
+div:has(> button) {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 16px !important;
+  margin-top: 32px !important;
+}
+
+/* Botones de Paginación (Anterior / Siguiente) */
+div:has(> button) > button {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border: 1px solid #d1d5db !important;
+  padding: 8px 16px !important;
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+  width: auto !important;
+}
+
+div:has(> button) > button:hover:not(:disabled) {
+  background-color: #f3f4f6 !important;
+}
+
+div:has(> button) > button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
