@@ -1,0 +1,13 @@
+# Archivos de entorno y credenciales
+.env
+.env.local
+
+# Entorno virtual y caché de Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# IDEs y editores
+.vscode/
+.idea/
