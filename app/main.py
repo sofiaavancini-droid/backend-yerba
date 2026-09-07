@@ -1,24 +1,26 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.core.config import settings
-from app.routers import productos
+from app.routers import productos, auth
 
-app = FastAPI(title=settings.PROJECT_NAME)
+app = FastAPI(
+    title="Yerba E-commerce API",
+    version="1.0.0"
+)
 
-# Configuración de CORS usando los orígenes definidos en el .env
+# Configuración de CORS para el Frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Montaje del router de productos
+# Montar Routers
+app.include_router(auth.router)
 app.include_router(productos.router)
 
-
 @app.get("/")
-def raiz():
-    return {"status": "ok", "app": settings.PROJECT_NAME}
+def root():
+    return {"mensaje": "API de E-commerce Yerba funcionando correctamente"}
