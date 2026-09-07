@@ -7,8 +7,8 @@ from app.db.database import get_db
 from app.db.models import Usuario
 from app.core.config import settings
 
-# Indica a Swagger que la URL para obtener el token es /auth/login
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
 
 def get_current_user(
     token: str = Depends(oauth2_scheme), 
