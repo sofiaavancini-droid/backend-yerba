@@ -1,32 +1,32 @@
 from datetime import datetime
-from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 
-# Esquema para crear un nuevo usuario
 class UsuarioCreate(BaseModel):
     nombre: str
     email: EmailStr
     password: str
     acepto_tratamiento: bool
 
-# Esquema de salida pública del usuario
+    @field_validator("acepto_tratamiento")
+    def validar_consentimiento(cls, v):
+        if not v:
+            raise ValueError("Debe aceptar el tratamiento de datos personales para registrarse.")
+        return v
+
 class UsuarioOut(BaseModel):
     id: int
     nombre: str
     email: EmailStr
     rol: str
-    acepto_tratamiento: bool
-    fecha_consentimiento: Optional[datetime] = None
+    fecha_consentimiento: datetime
 
     class Config:
         from_attributes = True
 
-# Esquema de respuesta para el token JWT
 class Token(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
 
-# Esquema para renovar el token de acceso
-class RefreshIn(BaseModel):
+class RefreshTokenRequest(BaseModel):
     refresh_token: str

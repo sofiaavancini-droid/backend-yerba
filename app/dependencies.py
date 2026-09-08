@@ -3,52 +3,36 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
-from app.db.database import get_db
-from app.db.models import Usuario
 from app.core.config import settings
+from app.db.session import get_db  # Importá tu generador de sesión de BD
+from app.models.usuario import Usuario
 
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
-
-def get_current_user(
-    token: str = Depends(oauth2_scheme), 
-    db: Session = Depends(get_db)
-) -> Usuario:
-    error_credenciales = HTTPException(
+def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> Usuario:
+    credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Credenciales de autenticación inválidas",
+        detail="No se pudieron validar las credenciales",
         headers={"WWW-Authenticate": "Bearer"},
     )
-    
     try:
-        # Decodificamos el token usando el SECRET_KEY
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         email: str = payload.get("sub")
         tipo: str = payload.get("tipo")
-        
-        # Validamos que el token contenga email y sea de tipo "access"
         if email is None or tipo != "access":
-            raise error_credenciales
-            
+            raise credentials_exception
     except JWTError:
-        raise error_credenciales
+        raise credentials_exception
 
-    # Buscamos al usuario en la base de datos
     usuario = db.query(Usuario).filter(Usuario.email == email).first()
     if usuario is None:
-        raise error_credenciales
-        
+        raise credentials_exception
     return usuario
 
-
-def require_admin(usuario: Usuario = Depends(get_current_user)) -> Usuario:
-    # Soporta si el rol está guardado como 'rol' == 'admin' o booleano 'es_admin'
-    es_admin = getattr(usuario, "es_admin", False) or getattr(usuario, "rol", "") == "admin"
-    
-    if not es_admin:
+def require_admin(current_user: Usuario = Depends(get_current_user)) -> Usuario:
+    if current_user.rol != "admin":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Necesitás permisos de administrador para realizar esta acción"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permisos insuficientes para realizar esta acción"
         )
-        
-    return usuario
+    return current_user

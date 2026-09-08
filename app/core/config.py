@@ -1,4 +1,5 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Optional
 
 class Settings(BaseSettings):
     DATABASE_URL: str
@@ -6,10 +7,13 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_MIN: int = 30
     REFRESH_MIN: int = 10080
-    CORS_ORIGINS: str = "http://localhost:5173"
+    
+   
+    cors_origins: Optional[str] = "http://localhost:5173,http://127.0.0.1:5173"
 
-    class Config:
-        env_file = ".env"
-        extra = "ignore"
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore" 
+    )
 
 settings = Settings()

@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 
-from app.db.database import Base
+# ⚠️ Verificá si tu 'Base' está en app.db.database, app.db.session o app.db.base
+from app.db.database import Base 
 
 class Usuario(Base):
     __tablename__ = "usuarios"
