@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -6,10 +6,9 @@ from jose import JWTError, jwt
 
 from app.core.config import settings
 from app.core.security import hash_password, verificar_password, crear_token
-from app.db.session import get_db
-from app.models.usuario import Usuario
+from app.dependencies import get_db, get_current_user  # <-- Importación unificada
+from app.db.models import Usuario                      # <-- Importación unificada
 from app.schemas.usuario import UsuarioCreate, UsuarioOut, Token, RefreshTokenRequest
-from app.dependencies import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -24,7 +23,7 @@ def register(usuario_in: UsuarioCreate, db: Session = Depends(get_db)):
         email=usuario_in.email,
         hashed_password=hash_password(usuario_in.password),
         acepto_tratamiento=usuario_in.acepto_tratamiento,
-        fecha_consentimiento=datetime.utcnow(),
+        fecha_consentimiento=datetime.now(timezone.utc),
         rol="customer"
     )
     db.add(nuevo_usuario)
