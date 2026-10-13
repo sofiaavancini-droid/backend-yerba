@@ -1,7 +1,6 @@
 
-const BASE_URL = "http://localhost:8000";
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-// REGISTRO
 export async function registrar(datos) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
@@ -38,7 +37,7 @@ export async function login(email, password) {
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
     },
-    body: body,
+    body,
   });
 
   if (res.status === 401) {
@@ -80,6 +79,67 @@ export function authHeaders() {
     : {};
 }
 
+
+export async function subirImagen(productoId, archivo) {
+  const formData = new FormData();
+
+  // El nombre "archivo" debe coincidir con el backend.
+  formData.append("archivo", archivo);
+
+  const res = await fetch(
+    `${BASE_URL}/productos/${productoId}/imagen`,
+    {
+      method: "POST",
+      headers: authHeaders(),
+      body: formData,
+    }
+  );
+
+  if (res.status === 401) {
+    throw new Error(
+      "Tu sesión venció. Iniciá sesión nuevamente."
+    );
+  }
+
+  if (res.status === 403) {
+    throw new Error(
+      "No tenés permisos para subir imágenes. Iniciá sesión como administrador."
+    );
+  }
+
+  if (res.status === 404) {
+    throw new Error("No se encontró el producto.");
+  }
+
+  if (res.status === 413) {
+    throw new Error("La imagen supera el tamaño máximo de 2 MB.");
+  }
+
+  if (res.status === 415) {
+    throw new Error(
+      "El archivo seleccionado no es una imagen válida."
+    );
+  }
+
+  if (!res.ok) {
+    let mensaje = "No se pudo subir la imagen.";
+
+    try {
+      const data = await res.json();
+
+      if (data.detail) {
+        mensaje = data.detail;
+      }
+    } catch {
+      // Se mantiene el mensaje predeterminado.
+    }
+
+    throw new Error(mensaje);
+  }
+
+  return res.json();
+}
+
 // CREAR PEDIDO
 export async function crearPedido(carrito) {
   const res = await fetch(`${BASE_URL}/pedidos/`, {
@@ -102,6 +162,7 @@ export async function crearPedido(carrito) {
 
   if (res.status === 409) {
     const data = await res.json();
+
     throw new Error(
       data.detail || "No hay suficiente stock."
     );
@@ -149,10 +210,9 @@ export async function exportarMisDatos() {
   }
 
   const blob = await res.blob();
-
   const url = URL.createObjectURL(blob);
-
   const a = document.createElement("a");
+
   a.href = url;
   a.download = "mis-datos.json";
 

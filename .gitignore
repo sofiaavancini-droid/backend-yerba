@@ -11,3 +11,12 @@ __pycache__/
 # IDEs y editores
 .vscode/
 .idea/
+# Dependencias de JavaScript
+node_modules/
+
+# Archivos compilados
+dist/
+
+# Otros archivos de entorno
+.env.*
+!.env.example

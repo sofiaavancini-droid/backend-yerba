@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import ProductCard from "../components/ProductCard";
 
@@ -5,23 +6,54 @@ function Catalogo({ agregarAlCarrito }) {
   const [productos, setProductos] = useState([]);
   const [busqueda, setBusqueda] = useState("");
   const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [lento, setLento] = useState(false);
 
+  // Mostrar un aviso si el servidor tarda más de 5 segundos.
   useEffect(() => {
-    fetch("http://localhost:8000/productos/")
-      .then((res) => {
-        if (!res.ok) {
+    if (!cargando) {
+      setLento(false);
+      return;
+    }
+
+    const temporizador = setTimeout(() => {
+      setLento(true);
+    }, 5000);
+
+    return () => clearTimeout(temporizador);
+  }, [cargando]);
+
+  // Cargar los productos desde el backend.
+  useEffect(() => {
+    async function cargarProductos() {
+      try {
+        setError("");
+
+        const BASE_URL = import.meta.env.VITE_API_URL;
+
+        if (!BASE_URL) {
+          throw new Error("Falta configurar VITE_API_URL");
+        }
+
+        const respuesta = await fetch(
+          `${BASE_URL.replace(/\/$/, "")}/productos/`
+        );
+
+        if (!respuesta.ok) {
           throw new Error("Error al cargar productos");
         }
 
-        return res.json();
-      })
-      .then((data) => {
-        setProductos(data);
-      })
-      .catch((error) => {
-        console.error(error);
-        setError("No se pudieron cargar los productos");
-      });
+        const datos = await respuesta.json();
+        setProductos(datos);
+      } catch (error) {
+        console.error("Error al cargar productos:", error);
+        setError("No se pudieron cargar los productos. Probá nuevamente.");
+      } finally {
+        setCargando(false);
+      }
+    }
+
+    cargarProductos();
   }, []);
 
   const productosFiltrados = productos.filter((producto) =>
@@ -30,9 +62,11 @@ function Catalogo({ agregarAlCarrito }) {
       .includes(busqueda.toLowerCase())
   );
 
+  // Mensaje de error.
   if (error) {
     return (
       <p
+        role="alert"
         style={{
           padding: "30px",
           textAlign: "center",
@@ -44,12 +78,27 @@ function Catalogo({ agregarAlCarrito }) {
     );
   }
 
+  // Mostrar la espera mientras se cargan los productos.
+  if (cargando) {
+    return (
+      <p
+        role="status"
+        style={{
+          padding: "30px",
+          textAlign: "center",
+          color: "#15803d",
+          fontSize: "17px",
+        }}
+      >
+        {lento
+          ? "Despertando el servidor, la primera visita puede tardar un minuto…"
+          : "Cargando productos…"}
+      </p>
+    );
+  }
+
   return (
-    <div
-      style={{
-        width: "100%",
-      }}
-    >
+    <div style={{ width: "100%" }}>
       {/* BUSCADOR */}
       <div
         style={{
@@ -115,8 +164,7 @@ function Catalogo({ agregarAlCarrito }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(300px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
             gap: "30px",
             width: "100%",
           }}

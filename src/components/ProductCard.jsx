@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { urlImagen } from "../utils/imagenes";
 
 import playadito from "../imagenes/playadito.jpg";
 import taragui from "../imagenes/taragui.jpg";
@@ -5,16 +7,47 @@ import rosamonte from "../imagenes/rosamonte.jpg";
 import canarias from "../imagenes/canarias.jpg";
 
 export default function ProductCard({ producto, agregarAlCarrito }) {
+  const [imagenesFallidas, setImagenesFallidas] = useState([]);
+
   const sinStock = producto.stock <= 0;
 
-  let imagenProducto = playadito;
+  // Obtener la imagen subida al servidor, si existe.
+  const imagenServidor = urlImagen(producto);
 
-  if (producto.nombre.includes("Taragüí")) {
-    imagenProducto = taragui;
-  } else if (producto.nombre.includes("Rosamonte")) {
-    imagenProducto = rosamonte;
-  } else if (producto.nombre.includes("Canarias")) {
-    imagenProducto = canarias;
+  // Identificar la yerba para usar su imagen local como respaldo.
+  const nombre = String(producto.nombre || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+  let imagenLocal = null;
+
+  if (nombre.includes("playadito")) {
+    imagenLocal = playadito;
+  } else if (nombre.includes("taragui")) {
+    imagenLocal = taragui;
+  } else if (nombre.includes("rosamonte")) {
+    imagenLocal = rosamonte;
+  } else if (nombre.includes("canarias")) {
+    imagenLocal = canarias;
+  }
+
+  // Priorizar la imagen del servidor y usar la local como respaldo.
+  const imagen =
+    imagenServidor && !imagenesFallidas.includes(imagenServidor)
+      ? imagenServidor
+      : imagenLocal && !imagenesFallidas.includes(imagenLocal)
+        ? imagenLocal
+        : null;
+
+  function manejarErrorImagen() {
+    if (!imagen) return;
+
+    setImagenesFallidas((anteriores) =>
+      anteriores.includes(imagen)
+        ? anteriores
+        : [...anteriores, imagen]
+    );
   }
 
   return (
@@ -36,9 +69,9 @@ export default function ProductCard({ producto, agregarAlCarrito }) {
           height: "12px",
           backgroundColor: "#15803d",
         }}
-      ></div>
+      />
 
-      {/* IMAGEN */}
+      {/* IMAGEN DEL PRODUCTO */}
       <div
         style={{
           width: "100%",
@@ -47,17 +80,36 @@ export default function ProductCard({ producto, agregarAlCarrito }) {
           justifyContent: "center",
           alignItems: "center",
           backgroundColor: "#f9fafb",
+          overflow: "hidden",
         }}
       >
-        <img
-          src={imagenProducto}
-          alt={producto.nombre}
-          style={{
-            maxWidth: "85%",
-            maxHeight: "200px",
-            objectFit: "contain",
-          }}
-        />
+        {imagen ? (
+          <img
+            src={imagen}
+            alt={producto.nombre}
+            loading="lazy"
+            onError={manejarErrorImagen}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              width: "100%",
+              height: "100%",
+              color: "#6b7280",
+              fontSize: "15px",
+            }}
+          >
+            Sin imagen
+          </div>
+        )}
       </div>
 
       {/* CONTENIDO */}
@@ -129,7 +181,12 @@ export default function ProductCard({ producto, agregarAlCarrito }) {
               justifyContent: "space-between",
             }}
           >
-            <span style={{ color: "#6b7280", fontSize: "15px" }}>
+            <span
+              style={{
+                color: "#6b7280",
+                fontSize: "15px",
+              }}
+            >
               Cuotas
             </span>
 
@@ -153,7 +210,12 @@ export default function ProductCard({ producto, agregarAlCarrito }) {
               justifyContent: "space-between",
             }}
           >
-            <span style={{ color: "#6b7280", fontSize: "15px" }}>
+            <span
+              style={{
+                color: "#6b7280",
+                fontSize: "15px",
+              }}
+            >
               Garantía
             </span>
 
@@ -177,7 +239,12 @@ export default function ProductCard({ producto, agregarAlCarrito }) {
               justifyContent: "space-between",
             }}
           >
-            <span style={{ color: "#6b7280", fontSize: "15px" }}>
+            <span
+              style={{
+                color: "#6b7280",
+                fontSize: "15px",
+              }}
+            >
               Stock
             </span>
 
@@ -196,9 +263,9 @@ export default function ProductCard({ producto, agregarAlCarrito }) {
         </div>
 
         {/* ESPACIO */}
-        <div style={{ flex: 1 }}></div>
+        <div style={{ flex: 1 }} />
 
-        {/* BOTÓN */}
+        {/* BOTÓN DEL CARRITO */}
         <button
           type="button"
           disabled={sinStock}

@@ -48,7 +48,7 @@ function Tienda() {
   }, [productos]);
 
   const cargarProductos = () => {
-    fetch("http://localhost:8000/productos/")
+    fetch(`${import.meta.env.VITE_API_URL}/productos/`)
       .then((res) => res.json())
       .then((data) => {
         setProductos(data);
