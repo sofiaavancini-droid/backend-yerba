@@ -25,12 +25,12 @@ class Producto(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, nullable=False)
-    descripcion = Column(String, nullable=True)  # <-- Columna agregada
+    descripcion = Column(String, nullable=True)
     precio_final = Column(Numeric(12, 2), nullable=False)
     stock = Column(Integer, nullable=False)
     cuotas = Column(Integer, default=1)
     garantia = Column(String, nullable=True)
-
+    imagen_url = Column(String, nullable=True)
 
 class Pedido(Base):
     __tablename__ = "pedidos"

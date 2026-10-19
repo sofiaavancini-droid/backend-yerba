@@ -1,4 +1,7 @@
 
+from datetime import datetime, timezone
+import secrets
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
@@ -97,14 +100,12 @@ def cambiar_estado_pedido(
     usuario: Usuario = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    # Solo admin puede cambiar el estado
     if usuario.rol != "admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Solo un administrador puede cambiar el estado del pedido."
         )
 
-    # Estados permitidos
     if nuevo_estado not in [
         "pendiente",
         "aceptado",
@@ -133,3 +134,73 @@ def cambiar_estado_pedido(
     db.refresh(pedido)
 
     return pedido
+
+
+# =========================
+# ARREPENTIMIENTO DE COMPRA
+# =========================
+
+@router.post(
+    "/{pedido_id}/revocacion",
+    status_code=status.HTTP_201_CREATED
+)
+def revocar_pedido(
+    pedido_id: int,
+    usuario: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    pedido = (
+        db.query(Pedido)
+        .filter(Pedido.id == pedido_id)
+        .first()
+    )
+
+    # Verificar que el pedido exista y pertenezca al usuario
+    if pedido is None or pedido.usuario_id != usuario.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No existe ese pedido."
+        )
+
+    # Verificar si ya está cancelado
+    if pedido.estado == "cancelado":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este pedido ya fue cancelado."
+        )
+
+    # Verificar límite de 10 días
+    ahora = datetime.now(timezone.utc)
+
+    creado_en = pedido.creado_en
+
+    if creado_en.tzinfo is None:
+        creado_en = creado_en.replace(tzinfo=timezone.utc)
+
+    dias_transcurridos = (
+        ahora - creado_en
+    ).total_seconds() / 86400
+
+    if dias_transcurridos > 10:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Ya pasaron más de 10 días desde la compra."
+        )
+
+    # Cambiar estado a cancelado
+    pedido.estado = "cancelado"
+
+    db.commit()
+    db.refresh(pedido)
+
+    # Generar código de arrepentimiento
+    codigo = (
+        f"ARR-{datetime.now().strftime('%Y%m%d')}-"
+        f"{secrets.token_hex(3).upper()}"
+    )
+
+    return {
+        "codigo": codigo,
+        "pedido_id": pedido.id,
+        "creada_en": datetime.now(timezone.utc)
+    }
