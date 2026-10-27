@@ -4,7 +4,9 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-
+from fastapi import Depends
+from sqlalchemy import text
+from app.db.database import get_db
 from app.core.config import settings
 from app.routers import auth, productos, pedidos, usuarios
 
@@ -64,4 +66,15 @@ app.include_router(usuarios.router)
 def raiz():
     return {
         "mensaje": "API de E-Commerce DSI2-IRESM funcionando correctamente"
+    }
+
+
+
+# Comprobar que la API y la base de datos funcionan
+@app.get("/salud", tags=["Salud"])
+def salud(db=Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {
+        "estado": "ok",
+        "base": "ok"
     }
