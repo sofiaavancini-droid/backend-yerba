@@ -10,7 +10,7 @@ from alembic import context
 
 from app.core.config import settings
 from app.db.database import Base
-from app.db.models import Usuario, Producto
+from app.db.models import Usuario, Producto, Pedido, ItemPedido
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)

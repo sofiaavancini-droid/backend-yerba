@@ -1,15 +1,23 @@
 
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi import Depends
 from sqlalchemy import text
-from app.db.database import get_db
+
+from app.db.database import get_db, Base, engine
+from app.db import models
 from app.core.config import settings
 from app.routers import auth, productos, pedidos, usuarios
 
+
+# Crear las tablas que falten en la base configurada
+# Crear las tablas automáticamente solo si está habilitado en Render
+import os
+
+if os.getenv("CREAR_TABLAS_AL_INICIAR", "false").lower() == "true":
+    Base.metadata.create_all(bind=engine)
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(
@@ -54,7 +62,7 @@ app.mount(
 )
 
 
-# Registro de Routers
+# Registrar las rutas
 app.include_router(auth.router)
 app.include_router(productos.router)
 app.include_router(pedidos.router)
@@ -67,7 +75,6 @@ def raiz():
     return {
         "mensaje": "API de E-Commerce DSI2-IRESM funcionando correctamente"
     }
-
 
 
 # Comprobar que la API y la base de datos funcionan

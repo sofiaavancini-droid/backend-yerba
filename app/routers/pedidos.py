@@ -1,4 +1,5 @@
 
+
 from datetime import datetime, timezone
 import secrets
 
@@ -59,6 +60,58 @@ def mis_pedidos(
 
 
 # =========================
+# VER TODOS LOS PEDIDOS (SOLO ADMIN)
+# =========================
+
+@router.get("/admin/todos")
+def listar_todos_los_pedidos(
+    usuario: Usuario = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if usuario.rol != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo un administrador puede ver todos los pedidos."
+        )
+
+    pedidos = (
+        db.query(Pedido)
+        .order_by(Pedido.creado_en.desc())
+        .all()
+    )
+
+    resultado = []
+
+    for pedido in pedidos:
+        resultado.append({
+            "id": pedido.id,
+            "cliente": {
+                "id": pedido.usuario.id,
+                "nombre": pedido.usuario.nombre,
+                "email": pedido.usuario.email
+            },
+            "fecha": pedido.creado_en,
+            "estado": pedido.estado,
+            "total": pedido.total,
+            "items": [
+                {
+                    "producto_id": item.producto_id,
+                    "producto": (
+                        item.producto.nombre
+                        if item.producto
+                        else "Producto eliminado"
+                    ),
+                    "cantidad": item.cantidad,
+                    "precio_unitario": item.precio_unitario
+                }
+                for item in pedido.items
+            ]
+        })
+
+    return resultado
+
+
+# =========================
 # VER UN PEDIDO
 # =========================
 
@@ -90,7 +143,7 @@ def obtener_pedido(
 
 
 # =========================
-# CAMBIAR ESTADO
+# CAMBIAR ESTADO (SOLO ADMIN)
 # =========================
 
 @router.put("/{pedido_id}/estado")
@@ -171,7 +224,6 @@ def revocar_pedido(
 
     # Verificar límite de 10 días
     ahora = datetime.now(timezone.utc)
-
     creado_en = pedido.creado_en
 
     if creado_en.tzinfo is None:
