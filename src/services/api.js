@@ -1,6 +1,10 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL;
 
+// =========================
+// REGISTRAR USUARIO
+// =========================
+
 export async function registrar(datos) {
   const res = await fetch(`${BASE_URL}/auth/register`, {
     method: "POST",
@@ -25,7 +29,10 @@ export async function registrar(datos) {
   return res.json();
 }
 
+// =========================
 // LOGIN
+// =========================
+
 export async function login(email, password) {
   const body = new URLSearchParams({
     username: email,
@@ -51,7 +58,10 @@ export async function login(email, password) {
   return res.json();
 }
 
+// =========================
 // OBTENER USUARIO
+// =========================
+
 export async function getMe() {
   const token = localStorage.getItem("access_token");
 
@@ -68,7 +78,10 @@ export async function getMe() {
   return res.json();
 }
 
+// =========================
 // HEADERS CON TOKEN
+// =========================
+
 export function authHeaders() {
   const token = localStorage.getItem("access_token");
 
@@ -79,11 +92,12 @@ export function authHeaders() {
     : {};
 }
 
+// =========================
+// SUBIR IMAGEN DE PRODUCTO
+// =========================
 
 export async function subirImagen(productoId, archivo) {
   const formData = new FormData();
-
-  // El nombre "archivo" debe coincidir con el backend.
   formData.append("archivo", archivo);
 
   const res = await fetch(
@@ -131,7 +145,7 @@ export async function subirImagen(productoId, archivo) {
         mensaje = data.detail;
       }
     } catch {
-      // Se mantiene el mensaje predeterminado.
+      // Se conserva el mensaje predeterminado.
     }
 
     throw new Error(mensaje);
@@ -140,7 +154,10 @@ export async function subirImagen(productoId, archivo) {
   return res.json();
 }
 
+// =========================
 // CREAR PEDIDO
+// =========================
+
 export async function crearPedido(carrito) {
   const res = await fetch(`${BASE_URL}/pedidos/`, {
     method: "POST",
@@ -175,7 +192,10 @@ export async function crearPedido(carrito) {
   return res.json();
 }
 
+// =========================
 // MIS DATOS
+// =========================
+
 export async function getMisDatos() {
   const res = await fetch(`${BASE_URL}/usuarios/me/datos`, {
     headers: authHeaders(),
@@ -192,7 +212,10 @@ export async function getMisDatos() {
   return res.json();
 }
 
+// =========================
 // EXPORTAR MIS DATOS
+// =========================
+
 export async function exportarMisDatos() {
   const res = await fetch(
     `${BASE_URL}/usuarios/me/exportar`,
@@ -223,7 +246,10 @@ export async function exportarMisDatos() {
   URL.revokeObjectURL(url);
 }
 
+// =========================
 // ELIMINAR MI CUENTA
+// =========================
+
 export async function eliminarMiCuenta() {
   const res = await fetch(`${BASE_URL}/usuarios/me`, {
     method: "DELETE",
@@ -241,7 +267,10 @@ export async function eliminarMiCuenta() {
   return res.json();
 }
 
+// =========================
 // MIS PEDIDOS
+// =========================
+
 export async function getMisPedidos() {
   const res = await fetch(`${BASE_URL}/pedidos/mios`, {
     headers: authHeaders(),
@@ -258,7 +287,10 @@ export async function getMisPedidos() {
   return res.json();
 }
 
+// =========================
 // OBTENER UN PEDIDO
+// =========================
+
 export async function getPedido(pedidoId) {
   const res = await fetch(
     `${BASE_URL}/pedidos/${pedidoId}`,
@@ -282,7 +314,10 @@ export async function getPedido(pedidoId) {
   return res.json();
 }
 
+// =========================
 // ARREPENTIRME DE UN PEDIDO
+// =========================
+
 export async function revocarPedido(pedidoId) {
   const res = await fetch(
     `${BASE_URL}/pedidos/${pedidoId}/revocacion`,
@@ -311,6 +346,80 @@ export async function revocarPedido(pedidoId) {
 
   if (!res.ok) {
     throw new Error("No se pudo revocar la compra.");
+  }
+
+  return res.json();
+}
+
+// =========================
+// VER TODOS LOS PEDIDOS (SOLO ADMIN)
+// =========================
+
+export async function getTodosLosPedidos() {
+  const res = await fetch(
+    `${BASE_URL}/pedidos/admin/todos`,
+    {
+      headers: authHeaders(),
+    }
+  );
+
+  if (res.status === 401) {
+    throw new Error("Tenés que iniciar sesión.");
+  }
+
+  if (res.status === 403) {
+    throw new Error(
+      "Solo un administrador puede ver todos los pedidos."
+    );
+  }
+
+  if (!res.ok) {
+    throw new Error("No se pudieron cargar los pedidos.");
+  }
+
+  return res.json();
+}
+
+// =========================
+// CAMBIAR ESTADO DE UN PEDIDO (SOLO ADMIN)
+// =========================
+
+export async function cambiarEstadoPedido(
+  pedidoId,
+  nuevoEstado
+) {
+  const res = await fetch(
+    `${BASE_URL}/pedidos/${pedidoId}/estado?nuevo_estado=${encodeURIComponent(nuevoEstado)}`,
+    {
+      method: "PUT",
+      headers: authHeaders(),
+    }
+  );
+
+  if (res.status === 401) {
+    throw new Error("Tenés que iniciar sesión.");
+  }
+
+  if (res.status === 403) {
+    throw new Error(
+      "Solo un administrador puede cambiar el estado."
+    );
+  }
+
+  if (!res.ok) {
+    let mensaje = "No se pudo cambiar el estado del pedido.";
+
+    try {
+      const data = await res.json();
+
+      if (data.detail) {
+        mensaje = data.detail;
+      }
+    } catch {
+      // Se conserva el mensaje predeterminado.
+    }
+
+    throw new Error(mensaje);
   }
 
   return res.json();

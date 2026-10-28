@@ -7,6 +7,7 @@ import CarritoModal from "./components/CarritoModal";
 import LoginModal from "./components/LoginModal";
 import RegistroModal from "./components/RegistroModal";
 import AdminProductos from "./components/AdminProductos";
+import AdminPedidos from "./components/AdminPedidos";
 import MisDatos from "./pages/MisDatos";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { crearPedido } from "./services/api";
@@ -20,6 +21,7 @@ function Tienda() {
   const [verRegistro, setVerRegistro] = useState(false);
   const [verMenuCuenta, setVerMenuCuenta] = useState(false);
   const [verAdmin, setVerAdmin] = useState(false);
+  const [verPedidosAdmin, setVerPedidosAdmin] = useState(false);
   const [verMisDatos, setVerMisDatos] = useState(false);
   const [verMisPedidos, setVerMisPedidos] = useState(false);
 
@@ -33,73 +35,62 @@ function Tienda() {
   }, []);
 
   useEffect(() => {
-    const productosGuardados =
-      localStorage.getItem("volver_a_comprar");
+    const productosGuardados = localStorage.getItem("volver_a_comprar");
 
     if (!productosGuardados || productos.length === 0) {
       return;
     }
 
-    const items = JSON.parse(productosGuardados);
-
-    volverAComprar(items);
-
-    localStorage.removeItem("volver_a_comprar");
+    try {
+      const items = JSON.parse(productosGuardados);
+      volverAComprar(items);
+      localStorage.removeItem("volver_a_comprar");
+    } catch {
+      localStorage.removeItem("volver_a_comprar");
+    }
   }, [productos]);
 
   const cargarProductos = () => {
     fetch(`${import.meta.env.VITE_API_URL}/productos/`)
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error("No se pudieron cargar los productos.");
+        }
+        return res.json();
+      })
       .then((data) => {
         setProductos(data);
       })
       .catch(() => {
-        console.error(
-          "No se pudieron cargar los productos."
-        );
+        console.error("No se pudieron cargar los productos.");
       });
   };
 
   const agregarAlCarrito = (producto) => {
     setCarrito((prev) => {
-      const existe = prev.find(
-        (item) => item.id === producto.id
-      );
+      const existe = prev.find((item) => item.id === producto.id);
 
       if (existe) {
         if (existe.cantidad >= producto.stock) {
           alert(
             `No hay suficiente stock de "${producto.nombre}". Stock disponible: ${producto.stock}`
           );
-
           return prev;
         }
 
         return prev.map((item) =>
           item.id === producto.id
-            ? {
-                ...item,
-                cantidad: item.cantidad + 1,
-              }
+            ? { ...item, cantidad: item.cantidad + 1 }
             : item
         );
       }
 
       if (producto.stock <= 0) {
-        alert(
-          `El producto "${producto.nombre}" está sin stock.`
-        );
-
+        alert(`El producto "${producto.nombre}" está sin stock.`);
         return prev;
       }
 
-      return [
-        ...prev,
-        {
-          ...producto,
-          cantidad: 1,
-        },
-      ];
+      return [...prev, { ...producto, cantidad: 1 }];
     });
 
     setProductoAgregado(producto.nombre);
@@ -120,14 +111,10 @@ function Tienda() {
           alert(
             `No hay suficiente stock de "${item.nombre}". Stock disponible: ${item.stock}`
           );
-
           return item;
         }
 
-        return {
-          ...item,
-          cantidad: item.cantidad + 1,
-        };
+        return { ...item, cantidad: item.cantidad + 1 };
       })
     );
   };
@@ -137,10 +124,7 @@ function Tienda() {
       prev
         .map((item) =>
           item.id === id
-            ? {
-                ...item,
-                cantidad: item.cantidad - 1,
-              }
+            ? { ...item, cantidad: item.cantidad - 1 }
             : item
         )
         .filter((item) => item.cantidad > 0)
@@ -161,13 +145,10 @@ function Tienda() {
     try {
       const pedido = await crearPedido(carrito);
 
-      alert(
-        `¡Compra realizada con éxito!\n\nPedido #${pedido.id}`
-      );
+      alert(`¡Compra realizada con éxito!\n\nPedido #${pedido.id}`);
 
       setCarrito([]);
       setVerCarrito(false);
-
       cargarProductos();
     } catch (error) {
       alert(error.message);
@@ -179,8 +160,7 @@ function Tienda() {
 
     items.forEach((item) => {
       const producto = productos.find(
-        (producto) =>
-          producto.id === item.producto_id
+        (producto) => producto.id === item.producto_id
       );
 
       if (!producto) {
@@ -221,8 +201,7 @@ function Tienda() {
         );
 
         if (existe) {
-          const nuevaCantidad =
-            existe.cantidad + producto.cantidad;
+          const nuevaCantidad = existe.cantidad + producto.cantidad;
 
           if (nuevaCantidad <= producto.stock) {
             existe.cantidad = nuevaCantidad;
@@ -256,8 +235,7 @@ function Tienda() {
         style={{
           backgroundColor: "white",
           borderBottom: "1px solid #d1fae5",
-          boxShadow:
-            "0 2px 10px rgba(0, 0, 0, 0.05)",
+          boxShadow: "0 2px 10px rgba(0, 0, 0, 0.05)",
           position: "sticky",
           top: 0,
           zIndex: 10,
@@ -309,15 +287,10 @@ function Tienda() {
             {usuario ? (
               <div style={{ position: "relative" }}>
                 <button
-                  onClick={() =>
-                    setVerMenuCuenta(
-                      !verMenuCuenta
-                    )
-                  }
+                  onClick={() => setVerMenuCuenta(!verMenuCuenta)}
                   style={{
                     padding: "12px 20px",
-                    border:
-                      "1px solid #15803d",
+                    border: "1px solid #15803d",
                     borderRadius: "12px",
                     backgroundColor: "white",
                     color: "#15803d",
@@ -337,49 +310,64 @@ function Tienda() {
                       right: 0,
                       width: "220px",
                       backgroundColor: "white",
-                      border:
-                        "1px solid #d1d5db",
+                      border: "1px solid #d1d5db",
                       borderRadius: "12px",
                       padding: "10px",
-                      boxShadow:
-                        "0 8px 20px rgba(0,0,0,0.15)",
+                      boxShadow: "0 8px 20px rgba(0,0,0,0.15)",
                       zIndex: 100,
                     }}
                   >
-                    {usuario?.rol ===
-                      "admin" && (
-                      <button
-                        onClick={() => {
-                          setVerMenuCuenta(
-                            false
-                          );
-                          setVerAdmin(true);
-                        }}
-                        style={{
-                          width: "100%",
-                          padding: "10px",
-                          marginBottom:
-                            "8px",
-                          border: "none",
-                          borderRadius: "8px",
-                          backgroundColor:
-                            "#dcfce7",
-                          color: "#166534",
-                          fontSize: "14px",
-                          fontWeight: "600",
-                          cursor: "pointer",
-                          textAlign: "left",
-                        }}
-                      >
-                        ⚙️ Administrar productos
-                      </button>
+                    {usuario?.rol === "admin" && (
+                      <>
+                        <button
+                          onClick={() => {
+                            setVerMenuCuenta(false);
+                            setVerAdmin(true);
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            marginBottom: "8px",
+                            border: "none",
+                            borderRadius: "8px",
+                            backgroundColor: "#dcfce7",
+                            color: "#166534",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          ⚙️ Administrar productos
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setVerMenuCuenta(false);
+                            setVerPedidosAdmin(true);
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            marginBottom: "8px",
+                            border: "none",
+                            borderRadius: "8px",
+                            backgroundColor: "#dcfce7",
+                            color: "#166534",
+                            fontSize: "14px",
+                            fontWeight: "600",
+                            cursor: "pointer",
+                            textAlign: "left",
+                          }}
+                        >
+                          📦 Administrar pedidos
+                        </button>
+                      </>
                     )}
 
                     <button
                       onClick={() => {
-                        setVerMenuCuenta(
-                          false
-                        );
+                        setVerMenuCuenta(false);
                         setVerMisDatos(true);
                       }}
                       style={{
@@ -388,8 +376,7 @@ function Tienda() {
                         marginBottom: "8px",
                         border: "none",
                         borderRadius: "8px",
-                        backgroundColor:
-                          "#dcfce7",
+                        backgroundColor: "#dcfce7",
                         color: "#166534",
                         fontSize: "14px",
                         fontWeight: "600",
@@ -402,9 +389,7 @@ function Tienda() {
 
                     <button
                       onClick={() => {
-                        setVerMenuCuenta(
-                          false
-                        );
+                        setVerMenuCuenta(false);
                         setVerMisPedidos(true);
                       }}
                       style={{
@@ -413,8 +398,7 @@ function Tienda() {
                         marginBottom: "8px",
                         border: "none",
                         borderRadius: "8px",
-                        backgroundColor:
-                          "#dcfce7",
+                        backgroundColor: "#dcfce7",
                         color: "#166534",
                         fontSize: "14px",
                         fontWeight: "600",
@@ -428,22 +412,18 @@ function Tienda() {
                     <button
                       onClick={() => {
                         cerrarSesion();
-                        setVerMenuCuenta(
-                          false
-                        );
+                        setVerMenuCuenta(false);
                         setVerAdmin(false);
+                        setVerPedidosAdmin(false);
                         setVerMisDatos(false);
-                        setVerMisPedidos(
-                          false
-                        );
+                        setVerMisPedidos(false);
                       }}
                       style={{
                         width: "100%",
                         padding: "10px",
                         border: "none",
                         borderRadius: "8px",
-                        backgroundColor:
-                          "#fee2e2",
+                        backgroundColor: "#fee2e2",
                         color: "#dc2626",
                         fontSize: "14px",
                         fontWeight: "600",
@@ -459,13 +439,10 @@ function Tienda() {
             ) : (
               <>
                 <button
-                  onClick={() =>
-                    setVerLogin(true)
-                  }
+                  onClick={() => setVerLogin(true)}
                   style={{
                     padding: "12px 20px",
-                    border:
-                      "1px solid #15803d",
+                    border: "1px solid #15803d",
                     borderRadius: "12px",
                     backgroundColor: "white",
                     color: "#15803d",
@@ -478,13 +455,10 @@ function Tienda() {
                 </button>
 
                 <button
-                  onClick={() =>
-                    setVerRegistro(true)
-                  }
+                  onClick={() => setVerRegistro(true)}
                   style={{
                     padding: "12px 20px",
-                    border:
-                      "1px solid #15803d",
+                    border: "1px solid #15803d",
                     borderRadius: "12px",
                     backgroundColor: "white",
                     color: "#15803d",
@@ -509,8 +483,7 @@ function Tienda() {
                 fontSize: "15px",
                 fontWeight: "600",
                 cursor: "pointer",
-                boxShadow:
-                  "0 3px 8px rgba(21, 128, 61, 0.25)",
+                boxShadow: "0 3px 8px rgba(21, 128, 61, 0.25)",
               }}
             >
               🛒 Carrito ({totalUnidades})
@@ -534,66 +507,103 @@ function Tienda() {
         />
       </main>
 
-      {verAdmin &&
-        usuario?.rol === "admin" && (
+      {verAdmin && usuario?.rol === "admin" && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 200,
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "20px",
+          }}
+        >
           <div
             style={{
-              position: "fixed",
-              inset: 0,
-              zIndex: 200,
-              backgroundColor:
-                "rgba(0, 0, 0, 0.5)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
+              width: "100%",
+              maxWidth: "1000px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              backgroundColor: "white",
+              borderRadius: "20px",
               padding: "20px",
+              boxSizing: "border-box",
             }}
           >
             <div
               style={{
-                width: "100%",
-                maxWidth: "1000px",
-                maxHeight: "90vh",
-                overflowY: "auto",
-                backgroundColor: "white",
-                borderRadius: "20px",
-                padding: "20px",
-                boxSizing: "border-box",
+                display: "flex",
+                justifyContent: "flex-end",
+                marginBottom: "10px",
               }}
             >
-              <div
+              <button
+                onClick={() => setVerAdmin(false)}
                 style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  marginBottom: "10px",
+                  border: "none",
+                  backgroundColor: "#fee2e2",
+                  color: "#dc2626",
+                  borderRadius: "10px",
+                  padding: "8px 12px",
+                  fontSize: "18px",
+                  cursor: "pointer",
                 }}
               >
-                <button
-                  onClick={() =>
-                    setVerAdmin(false)
-                  }
-                  style={{
-                    border: "none",
-                    backgroundColor:
-                      "#fee2e2",
-                    color: "#dc2626",
-                    borderRadius: "10px",
-                    padding: "8px 12px",
-                    fontSize: "18px",
-                    cursor: "pointer",
-                  }}
-                >
-                  ✕
-                </button>
-              </div>
-
-              <AdminProductos
-                productos={productos}
-                setProductos={setProductos}
-              />
+                ✕
+              </button>
             </div>
+
+            <AdminProductos
+              productos={productos}
+              setProductos={setProductos}
+            />
           </div>
-        )}
+        </div>
+      )}
+
+      {verPedidosAdmin && usuario?.rol === "admin" && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 210,
+            backgroundColor: "white",
+            overflowY: "auto",
+          }}
+        >
+          <div
+            style={{
+              position: "sticky",
+              top: 0,
+              zIndex: 10,
+              display: "flex",
+              justifyContent: "flex-end",
+              padding: "15px 25px",
+              backgroundColor: "white",
+              borderBottom: "1px solid #e5e7eb",
+            }}
+          >
+            <button
+              onClick={() => setVerPedidosAdmin(false)}
+              style={{
+                border: "none",
+                backgroundColor: "#fee2e2",
+                color: "#dc2626",
+                borderRadius: "10px",
+                padding: "8px 12px",
+                fontSize: "18px",
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+
+          <AdminPedidos />
+        </div>
+      )}
 
       {verMisDatos && usuario && (
         <div
@@ -614,18 +624,14 @@ function Tienda() {
               justifyContent: "flex-end",
               padding: "15px 25px",
               backgroundColor: "white",
-              borderBottom:
-                "1px solid #e5e7eb",
+              borderBottom: "1px solid #e5e7eb",
             }}
           >
             <button
-              onClick={() =>
-                setVerMisDatos(false)
-              }
+              onClick={() => setVerMisDatos(false)}
               style={{
                 border: "none",
-                backgroundColor:
-                  "#fee2e2",
+                backgroundColor: "#fee2e2",
                 color: "#dc2626",
                 borderRadius: "10px",
                 padding: "8px 12px",
@@ -660,18 +666,14 @@ function Tienda() {
               justifyContent: "flex-end",
               padding: "15px 25px",
               backgroundColor: "white",
-              borderBottom:
-                "1px solid #e5e7eb",
+              borderBottom: "1px solid #e5e7eb",
             }}
           >
             <button
-              onClick={() =>
-                setVerMisPedidos(false)
-              }
+              onClick={() => setVerMisPedidos(false)}
               style={{
                 border: "none",
-                backgroundColor:
-                  "#fee2e2",
+                backgroundColor: "#fee2e2",
                 color: "#dc2626",
                 borderRadius: "10px",
                 padding: "8px 12px",
@@ -683,11 +685,7 @@ function Tienda() {
             </button>
           </div>
 
-          <MisPedidos
-            onVolverAComprar={
-              volverAComprar
-            }
-          />
+          <MisPedidos onVolverAComprar={volverAComprar} />
         </div>
       )}
 
@@ -701,12 +699,10 @@ function Tienda() {
             width: "320px",
             backgroundColor: "white",
             border: "1px solid #bbf7d0",
-            borderLeft:
-              "5px solid #15803d",
+            borderLeft: "5px solid #15803d",
             borderRadius: "14px",
             padding: "18px 22px",
-            boxShadow:
-              "0 8px 25px rgba(0,0,0,0.15)",
+            boxShadow: "0 8px 25px rgba(0,0,0,0.15)",
           }}
         >
           <p
@@ -735,36 +731,22 @@ function Tienda() {
       {verCarrito && (
         <CarritoModal
           carrito={carrito}
-          onCerrar={() =>
-            setVerCarrito(false)
-          }
-          onIncrementar={
-            incrementarCantidad
-          }
-          onDecrementar={
-            decrementarCantidad
-          }
-          onFinalizarCompra={
-            finalizarCompra
-          }
+          onCerrar={() => setVerCarrito(false)}
+          onIncrementar={incrementarCantidad}
+          onDecrementar={decrementarCantidad}
+          onFinalizarCompra={finalizarCompra}
         />
       )}
 
       {verLogin && (
         <LoginModal
           onCerrar={() => setVerLogin(false)}
-          onLoginExitoso={() =>
-            setMensajeCuenta(true)
-          }
+          onLoginExitoso={() => setMensajeCuenta(true)}
         />
       )}
 
       {verRegistro && (
-        <RegistroModal
-          onCerrar={() =>
-            setVerRegistro(false)
-          }
-        />
+        <RegistroModal onCerrar={() => setVerRegistro(false)} />
       )}
 
       <footer
@@ -776,12 +758,7 @@ function Tienda() {
           marginTop: "30px",
         }}
       >
-        <p
-          style={{
-            margin: 0,
-            fontSize: "14px",
-          }}
-        >
+        <p style={{ margin: 0, fontSize: "14px" }}>
           Yerba Mate Ar
         </p>
       </footer>
@@ -795,8 +772,7 @@ function Tienda() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            backgroundColor:
-              "rgba(0, 0, 0, 0.5)",
+            backgroundColor: "rgba(0, 0, 0, 0.5)",
             padding: "20px",
           }}
         >
@@ -808,8 +784,7 @@ function Tienda() {
               borderRadius: "20px",
               padding: "35px",
               textAlign: "center",
-              boxShadow:
-                "0 10px 30px rgba(0,0,0,0.2)",
+              boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
             }}
           >
             <h2
@@ -835,9 +810,7 @@ function Tienda() {
             </p>
 
             <button
-              onClick={() =>
-                setMensajeCuenta(false)
-              }
+              onClick={() => setMensajeCuenta(false)}
               style={{
                 width: "100%",
                 padding: "14px",
@@ -860,10 +833,7 @@ function Tienda() {
 }
 
 export default function App() {
-  if (
-    window.location.pathname ===
-    "/arrepentimiento"
-  ) {
+  if (window.location.pathname === "/arrepentimiento") {
     return (
       <AuthProvider>
         <Arrepentimiento />
