@@ -27,11 +27,7 @@ app = FastAPI(
 
 
 # Configuración de CORS
-cors_origins_str = getattr(
-    settings,
-    "cors_origins",
-    "http://localhost:5173,http://127.0.0.1:5173"
-)
+cors_origins_str = settings.CORS_ORIGINS
 
 origins = (
     [origin.strip() for origin in cors_origins_str.split(",")]
