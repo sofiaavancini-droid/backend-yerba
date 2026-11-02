@@ -20,3 +20,4 @@ dist/
 # Otros archivos de entorno
 .env.*
 !.env.example
+*.sql
