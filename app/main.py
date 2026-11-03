@@ -1,5 +1,7 @@
 
+
 from pathlib import Path
+import os
 
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,14 +14,12 @@ from app.core.config import settings
 from app.routers import auth, productos, pedidos, usuarios
 
 
-# Crear las tablas que falten en la base configurada
-# Crear las tablas automáticamente solo si está habilitado en Render
-import os
-
+# Crear las tablas que falten si está habilitado
 if os.getenv("CREAR_TABLAS_AL_INICIAR", "false").lower() == "true":
     Base.metadata.create_all(bind=engine)
 
-# Inicialización de la aplicación FastAPI
+
+# Inicialización de FastAPI
 app = FastAPI(
     title=getattr(settings, "PROJECT_NAME", "YERBA MATE AR"),
     version="1.0.0"
@@ -44,9 +44,11 @@ app.add_middleware(
 )
 
 
-# Crear la carpeta para guardar las imágenes
-CARPETA_UPLOADS = Path("uploads")
+# Configurar la carpeta de imágenes con una ruta absoluta
+BASE_DIR = Path(__file__).resolve().parent.parent
+CARPETA_UPLOADS = BASE_DIR / "uploads"
 CARPETA_PRODUCTOS = CARPETA_UPLOADS / "productos"
+
 CARPETA_PRODUCTOS.mkdir(parents=True, exist_ok=True)
 
 
@@ -73,10 +75,11 @@ def raiz():
     }
 
 
-# Comprobar que la API y la base de datos funcionan
+# Comprobar conexión con la base de datos
 @app.get("/salud", tags=["Salud"])
 def salud(db=Depends(get_db)):
     db.execute(text("SELECT 1"))
+
     return {
         "estado": "ok",
         "base": "ok"
